@@ -1,5 +1,5 @@
 import axios, { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
-import { Student, AttendanceRecord } from '../types';
+import { Student, AttendanceRecord, FaceRecognitionResponse } from '../types';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -41,6 +41,7 @@ export const studentService = {
 // Attendance service
 export const attendanceService = {
   markAttendance: (studentId: number) => api.post<AttendanceRecord>('/attendance', { student_id: studentId }),
+  markAttendanceByFace: (faceEncoding: number[]) => api.post<FaceRecognitionResponse>('/attendance/face-recognition', { face_encoding: faceEncoding }),
   getTodayAttendance: async () => {
     try {
       // Use the correct today endpoint

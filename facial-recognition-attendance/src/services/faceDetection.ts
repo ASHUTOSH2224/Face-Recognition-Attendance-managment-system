@@ -11,7 +11,7 @@ export async function loadFaceDetectionModel() {
 
     // Load the face detection model (using MediaPipe model)
     const model = faceDetection.SupportedModels.MediaPipeFaceDetector;
-    const detectorConfig = {
+    const detectorConfig: faceDetection.MediaPipeFaceDetectorTfjsModelConfig = {
       runtime: 'tfjs',
       modelType: 'short',
       maxFaces: 1

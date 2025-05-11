@@ -10,4 +10,9 @@ export interface AttendanceRecord {
   student_id: number;
   timestamp: string;
   status: 'present' | 'absent';
+}
+
+export interface FaceRecognitionResponse extends AttendanceRecord {
+  full_name?: string;
+  message?: string;
 } 
