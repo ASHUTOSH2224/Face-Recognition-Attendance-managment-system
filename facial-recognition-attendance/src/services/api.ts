@@ -35,6 +35,7 @@ export const studentService = {
   createStudent: (data: Omit<Student, 'id'>) => api.post<Student>('/students', data),
   getStudentById: (id: number) => api.get<Student>(`/students/${id}`),
   resetDatabase: () => api.post('/reset'),
+  deleteStudent: (id: number) => api.delete(`/students/${id}`),
 };
 
 // Attendance service

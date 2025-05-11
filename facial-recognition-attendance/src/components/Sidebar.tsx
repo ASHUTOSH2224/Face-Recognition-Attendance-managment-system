@@ -1,107 +1,112 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Home,
-  UserPlus,
-  UserCheck,
-  FileText,
-  Menu
-} from 'lucide-react';
+import { Home, UserPlus, Camera, Users, Calendar, BarChart } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
+  const menuItems = [
+    { path: '/', name: 'Dashboard', icon: <Home className="w-5 h-5" /> },
+    { path: '/students', name: 'Students', icon: <Users className="w-5 h-5" /> },
+    { path: '/register', name: 'Register Student', icon: <UserPlus className="w-5 h-5" /> },
+    { path: '/take-attendance', name: 'Take Attendance', icon: <Camera className="w-5 h-5" /> },
+    { path: '/attendance-calendar', name: 'Attendance Calendar', icon: <Calendar className="w-5 h-5" /> },
+    { path: '/attendance-stats', name: 'Attendance Stats', icon: <BarChart className="w-5 h-5" /> }
+  ];
+
   return (
-    <aside
-      className={`${
-        collapsed ? 'w-20' : 'w-64'
-      } transition-width flex flex-col bg-white shadow duration-300 ease-in-out`}
-    >
-      <div className="flex h-16 items-center justify-between border-b px-4">
-        {!collapsed && (
-          <span className="text-xl font-semibold">Attendance</span>
-        )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="rounded-lg p-2 hover:bg-gray-100"
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={toggleSidebar}
+        className="md:hidden fixed top-4 left-4 z-50 bg-indigo-600 text-white p-2 rounded-md"
+      >
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <Menu size={22} />
-        </button>
-      </div>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
 
-      <nav className="flex-1 space-y-1 px-2 py-4">
-        <NavItem
-          to="/"
-          icon={<Home size={22} />}
-          label="Dashboard"
-          active={isActive('/')}
-          collapsed={collapsed}
-        />
-        <NavItem
-          to="/register"
-          icon={<UserPlus size={22} />}
-          label="Register User"
-          active={isActive('/register')}
-          collapsed={collapsed}
-        />
-        <NavItem
-          to="/take-attendance"
-          icon={<UserCheck size={22} />}
-          label="Take Attendance"
-          active={isActive('/take-attendance')}
-          collapsed={collapsed}
-        />
-        <NavItem
-          to="/reports"
-          icon={<FileText size={22} />}
-          label="Reports"
-          active={isActive('/reports')}
-          collapsed={collapsed}
-        />
-      </nav>
-    </aside>
-  );
-};
+      {/* Sidebar for mobile (overlay) */}
+      <div
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity md:hidden ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={toggleSidebar}
+      ></div>
 
-interface NavItemProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  collapsed: boolean;
-}
+      {/* Sidebar content */}
+      <aside
+        className={`bg-white h-screen flex flex-col border-r fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out w-64 md:translate-x-0 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-center h-16 border-b">
+          <h2 className="text-xl font-semibold text-indigo-600">
+            Face Attendance
+          </h2>
+        </div>
 
-const NavItem: React.FC<NavItemProps> = ({
-  to,
-  icon,
-  label,
-  active,
-  collapsed
-}) => {
-  return (
-    <Link
-      to={to}
-      className={`${
-        active
-          ? 'bg-blue-100 text-blue-600'
-          : 'text-gray-700 hover:bg-gray-100'
-      } group flex items-center rounded-md px-2 py-2`}
-    >
-      <div className="mr-3 flex h-6 w-6 items-center justify-center">
-        {icon}
-      </div>
-      {!collapsed && <span className="text-sm font-medium">{label}</span>}
-      {collapsed && (
-        <span className="absolute left-full ml-6 w-auto min-w-max rounded-md bg-gray-800 px-2 py-1 text-xs font-medium text-white opacity-0 shadow group-hover:opacity-100">
-          {label}
-        </span>
-      )}
-    </Link>
+        <nav className="flex-1 overflow-y-auto p-4">
+          <ul className="space-y-2">
+            {menuItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 rounded-md transition-colors ${
+                    isActive(item.path)
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  onClick={() => {
+                    if (isOpen) {
+                      setIsOpen(false);
+                    }
+                  }}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  <span>{item.name}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="p-4 border-t">
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mr-3">
+              <span className="text-sm font-bold">FRS</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">Facial Recognition</p>
+              <p className="text-xs text-gray-500">Attendance System</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Spacer for fixed sidebar in desktop view */}
+      <div className="hidden md:block w-64 flex-shrink-0"></div>
+    </>
   );
 };
 

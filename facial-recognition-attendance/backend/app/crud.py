@@ -28,6 +28,22 @@ def create_student(db: Session, student: schemas.StudentCreate):
     db.refresh(db_student)
     return db_student
 
+def delete_student(db: Session, student_id: int):
+    # Check if student exists
+    student = db.query(models.Student).filter(models.Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Delete associated attendance records first
+    db.query(models.AttendanceRecord).filter(
+        models.AttendanceRecord.student_id == student_id
+    ).delete(synchronize_session=False)
+    
+    # Delete the student
+    db.delete(student)
+    db.commit()
+    return {"message": f"Student {student.full_name} and all associated records deleted successfully"}
+
 def create_attendance_record(db: Session, attendance: schemas.AttendanceRecordCreate):
     # Check if student exists
     student = db.query(models.Student).filter(models.Student.id == attendance.student_id).first()

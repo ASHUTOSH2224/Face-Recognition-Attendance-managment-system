@@ -26,6 +26,10 @@ def read_student(student_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Student not found")
     return db_student
 
+@router.delete("/students/{student_id}")
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    return crud.delete_student(db, student_id=student_id)
+
 @router.post("/students/reset")
 def reset_database():
     try:
