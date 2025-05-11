@@ -90,6 +90,29 @@ def get_attendance(db: Session = Depends(get_db)):
     ).all()
     return attendance_records
 
+@router.get("/today", response_model=List[schemas.AttendanceRecord])
+def get_today_attendance(db: Session = Depends(get_db)):
+    try:
+        # Get current time in IST
+        current_time = datetime.now(IST)
+        today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        
+        logger.debug(f"Fetching attendance for today: {today_start} to {today_end}")
+        
+        # Get today's attendance records
+        attendance_records = db.query(AttendanceRecord).filter(
+            AttendanceRecord.timestamp >= today_start,
+            AttendanceRecord.timestamp < today_end
+        ).all()
+        
+        logger.debug(f"Found {len(attendance_records)} attendance records for today")
+        return attendance_records
+    except Exception as e:
+        logger.error(f"Error fetching today's attendance: {str(e)}")
+        # Return empty list instead of raising an exception to prevent frontend errors
+        return []
+
 @router.get("/{user_id}", response_model=List[schemas.AttendanceRecord])
 def get_user_attendance_records(user_id: int, db: Session = Depends(get_db)):
     return get_user_attendance(db, user_id)
@@ -131,14 +154,6 @@ def create_attendance_record(
     db.commit()
     db.refresh(db_attendance)
     return db_attendance
-
-@router.get("/attendance/today/", response_model=List[AttendanceRecordSchema])
-def get_today_attendance(db: Session = Depends(get_db)):
-    today = datetime.now().date()
-    attendance_records = db.query(AttendanceRecord).filter(
-        AttendanceRecord.timestamp.cast(Date) == today
-    ).all()
-    return attendance_records
 
 @router.post("/face-recognition/", response_model=AttendanceRecordSchema)
 async def mark_attendance_by_face(

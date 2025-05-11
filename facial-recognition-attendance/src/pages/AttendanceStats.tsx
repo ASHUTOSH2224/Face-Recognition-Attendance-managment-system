@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { attendanceService, studentService } from '../services/api';
 import { AttendanceRecord, Student } from '../types';
-import { Calendar, Clock, Users, PieChart, BarChart as BarChartIcon, ArrowUp, ArrowDown } from 'lucide-react';
+import { Calendar, Clock, Users, PieChart, BarChart as BarChartIcon, ArrowUp, ArrowDown, Layers } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
 
 interface DailyAttendance {
@@ -253,7 +253,17 @@ const AttendanceStats: React.FC = () => {
         <div className="p-6">
           {selectedMetric === 'daily' && (
             <>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Daily Attendance Trends</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Daily Attendance Trends</h3>
+                <div className="flex space-x-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>Present
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    <span className="w-3 h-3 bg-red-500 rounded-full mr-1"></span>Absent
+                  </span>
+                </div>
+              </div>
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyAttendance}>
@@ -272,7 +282,13 @@ const AttendanceStats: React.FC = () => {
 
           {selectedMetric === 'time' && (
             <>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Attendance Time Distribution</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Attendance Time Distribution</h3>
+                <div className="flex items-center">
+                  <Layers className="h-5 w-5 text-gray-400 mr-1" />
+                  <span className="text-sm text-gray-500">Based on {attendanceRecords.length} records</span>
+                </div>  
+              </div>
               <div className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                   <RePieChart>
@@ -300,7 +316,20 @@ const AttendanceStats: React.FC = () => {
 
           {selectedMetric === 'student' && (
             <>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Student Attendance Rates</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Student Attendance Rates</h3>
+                <div className="flex space-x-2">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    ≥ 75% Good
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    50-74% Average
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    &lt; 50% Poor
+                  </span>
+                </div> 
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -351,6 +380,35 @@ const AttendanceStats: React.FC = () => {
               </div>
             </>
           )}
+        </div>
+      </div>
+      
+      <div className="bg-blue-50 rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-blue-800 mb-3">Understanding Attendance Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded shadow-sm">
+            <div className="flex items-center mb-2">
+              <Calendar className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="font-medium">Daily Trends</span>
+            </div>
+            <p className="text-gray-600 text-sm">Track attendance patterns over time to identify trends and potential issues</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded shadow-sm">
+            <div className="flex items-center mb-2">
+              <Clock className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="font-medium">Time Distribution</span>
+            </div>
+            <p className="text-gray-600 text-sm">Analyze when students are most likely to attend and optimize scheduling</p>
+          </div>
+          
+          <div className="bg-white p-4 rounded shadow-sm">
+            <div className="flex items-center mb-2">
+              <Users className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="font-medium">Student Performance</span>
+            </div>
+            <p className="text-gray-600 text-sm">Identify students with attendance issues to provide targeted support</p>
+          </div>
         </div>
       </div>
     </div>

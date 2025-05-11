@@ -42,8 +42,21 @@ export const studentService = {
 export const attendanceService = {
   markAttendance: (studentId: number) => api.post<AttendanceRecord>('/attendance', { student_id: studentId }),
   getTodayAttendance: async () => {
-    const response = await api.get<AttendanceRecord[]>('/attendance/today');
-    return response.data;
+    try {
+      // Use the correct today endpoint
+      const response = await api.get<AttendanceRecord[]>('/attendance/today');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching today\'s attendance:', error);
+      // Fall back to the regular attendance endpoint if the today endpoint fails
+      try {
+        const fallbackResponse = await api.get<AttendanceRecord[]>('/attendance');
+        return fallbackResponse.data;
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return []; // Return empty array if both attempts fail
+      }
+    }
   },
   getStudentAttendance: async (studentId: number) => {
     const response = await api.get<AttendanceRecord[]>(`/attendance/${studentId}`);
