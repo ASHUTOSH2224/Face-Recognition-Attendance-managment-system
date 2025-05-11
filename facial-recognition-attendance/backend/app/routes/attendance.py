@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.types import Date
-from typing import List
-from datetime import datetime, date
+from typing import List, Dict
+from datetime import datetime, date, timedelta, timezone
 import numpy as np
 import json
 import logging
@@ -16,18 +16,77 @@ from ..crud import create_attendance_record, get_user_attendance
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Define IST timezone offset (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
 router = APIRouter()
 
 @router.post("/", response_model=schemas.AttendanceRecord)
 def create_attendance(attendance: schemas.AttendanceRecordCreate, db: Session = Depends(get_db)):
     return create_attendance_record(db, attendance)
 
+@router.get("/analytics", response_model=Dict)
+def get_analytics(db: Session = Depends(get_db)):
+    # Get current time in IST
+    current_time = datetime.now(IST)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
+    # Get total registered students
+    total_students = db.query(Student).count()
+    
+    # Get today's attendance records
+    today_attendance = db.query(AttendanceRecord).filter(
+        AttendanceRecord.timestamp >= today_start,
+        AttendanceRecord.timestamp < today_end
+    ).all()
+    
+    # Count present students
+    present_today = len(today_attendance)
+    
+    # Calculate absent students
+    absent_today = total_students - present_today
+    
+    # Get attendance percentage
+    attendance_percentage = (present_today / total_students * 100) if total_students > 0 else 0
+    
+    # Get attendance history for the last 7 days
+    history_start = today_start - timedelta(days=7)
+    attendance_history = []
+    
+    for i in range(7):
+        day_start = history_start + timedelta(days=i)
+        day_end = day_start + timedelta(days=1)
+        
+        day_attendance = db.query(AttendanceRecord).filter(
+            AttendanceRecord.timestamp >= day_start,
+            AttendanceRecord.timestamp < day_end
+        ).count()
+        
+        attendance_history.append({
+            "date": day_start.strftime("%Y-%m-%d"),
+            "present": day_attendance,
+            "absent": total_students - day_attendance
+        })
+    
+    return {
+        "total_students": total_students,
+        "present_today": present_today,
+        "absent_today": absent_today,
+        "attendance_percentage": round(attendance_percentage, 2),
+        "attendance_history": attendance_history
+    }
+
 @router.get("/", response_model=List[schemas.AttendanceRecord])
 def get_attendance(db: Session = Depends(get_db)):
-    today = date.today()
+    # Get current time in IST
+    current_time = datetime.now(IST)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
     attendance_records = db.query(AttendanceRecord).filter(
-        AttendanceRecord.timestamp >= datetime.combine(today, datetime.min.time()),
-        AttendanceRecord.timestamp < datetime.combine(today, datetime.max.time())
+        AttendanceRecord.timestamp >= today_start,
+        AttendanceRecord.timestamp < today_end
     ).all()
     return attendance_records
 

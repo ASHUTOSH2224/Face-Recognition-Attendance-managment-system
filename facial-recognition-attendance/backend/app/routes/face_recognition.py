@@ -7,9 +7,12 @@ import json
 from io import BytesIO
 from PIL import Image
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from ..database import get_db
 from ..models import Student, AttendanceRecord
+
+# Define IST timezone offset (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter()
 
@@ -98,21 +101,26 @@ async def recognize_face(image_request: ImageRequest, db: Session = Depends(get_
         
         # Check if we found a match within reasonable distance
         if best_match and best_distance < 0.6:  # Threshold for face matching
+            # Get current time in IST
+            current_time = datetime.now(IST)
+            today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
             # Check if attendance already marked for today
-            today = datetime.now().date()
             existing_attendance = db.query(AttendanceRecord).filter(
                 AttendanceRecord.student_id == best_match.id,
-                AttendanceRecord.timestamp >= datetime.combine(today, datetime.min.time()),
-                AttendanceRecord.timestamp < datetime.combine(today, datetime.max.time())
+                AttendanceRecord.timestamp >= today_start,
+                AttendanceRecord.timestamp < today_end
             ).first()
             
             if existing_attendance:
                 raise HTTPException(status_code=400, detail="Attendance already marked for today")
             
-            # Create new attendance record
+            # Create new attendance record with IST timestamp
             attendance = AttendanceRecord(
                 student_id=best_match.id,
-                status="present"
+                status="present",
+                timestamp=current_time
             )
             db.add(attendance)
             db.commit()

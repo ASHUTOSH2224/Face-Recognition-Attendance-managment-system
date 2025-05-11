@@ -52,6 +52,10 @@ export const attendanceService = {
     const response = await api.get<AttendanceRecord[]>('/attendance');
     return response.data;
   },
+  getAnalytics: async () => {
+    const response = await api.get('/attendance/analytics');
+    return response.data;
+  }
 };
 
 // Face recognition service

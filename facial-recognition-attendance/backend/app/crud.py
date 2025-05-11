@@ -1,9 +1,12 @@
 from sqlalchemy.orm import Session
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from typing import List
 import json
 from fastapi import HTTPException
 from . import models, schemas
+
+# Define IST timezone offset (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 def get_student(db: Session, student_id: int):
     return db.query(models.Student).filter(models.Student.id == student_id).first()
@@ -31,21 +34,26 @@ def create_attendance_record(db: Session, attendance: schemas.AttendanceRecordCr
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     
+    # Get current time in IST
+    current_time = datetime.now(IST)
+    today_start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+    
     # Check if attendance already marked for today
-    today = date.today()
     existing_attendance = db.query(models.AttendanceRecord).filter(
         models.AttendanceRecord.student_id == attendance.student_id,
-        models.AttendanceRecord.timestamp >= datetime.combine(today, datetime.min.time()),
-        models.AttendanceRecord.timestamp < datetime.combine(today, datetime.max.time())
+        models.AttendanceRecord.timestamp >= today_start,
+        models.AttendanceRecord.timestamp < today_end
     ).first()
     
     if existing_attendance:
         raise HTTPException(status_code=400, detail="Attendance already marked for today")
     
-    # Create new attendance record
+    # Create new attendance record with IST timestamp
     db_attendance = models.AttendanceRecord(
         student_id=attendance.student_id,
-        status=attendance.status
+        status=attendance.status,
+        timestamp=current_time
     )
     db.add(db_attendance)
     db.commit()
