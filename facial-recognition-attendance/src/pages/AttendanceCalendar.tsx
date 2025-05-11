@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { attendanceService, studentService } from '../services/api';
 import { AttendanceRecord, Student } from '../types';
-import { Calendar, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Users, CheckSquare, RefreshCw } from 'lucide-react';
 
 interface CalendarDay {
   date: Date;
@@ -65,22 +65,40 @@ const AttendanceCalendar: React.FC = () => {
   const [dateAttendance, setDateAttendance] = useState<AttendanceRecord[]>([]);
 
   // Fetch all attendance records
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const attendanceData = await attendanceService.getAllAttendance();
-        const studentsResponse = await studentService.getAllStudents();
-        
-        setAttendanceRecords(attendanceData);
-        setStudents(studentsResponse.data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to fetch attendance data');
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Use Promise.allSettled to prevent one failed API call from blocking everything
+      const results = await Promise.allSettled([
+        attendanceService.getAllAttendance(),
+        studentService.getAllStudents()
+      ]);
+      
+      // Handle each API result individually
+      if (results[0].status === 'fulfilled') {
+        setAttendanceRecords(results[0].value);
+      } else {
+        console.error('Failed to fetch attendance data:', results[0].reason);
+        setError('Unable to fetch attendance records');
       }
-    };
+      
+      if (results[1].status === 'fulfilled') {
+        setStudents(results[1].value.data);
+      } else {
+        console.error('Failed to fetch student data:', results[1].reason);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to fetch attendance data');
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -170,7 +188,26 @@ const AttendanceCalendar: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Attendance Calendar</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Attendance Calendar</h1>
+        
+        <button 
+          onClick={fetchData} 
+          className="flex items-center px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center">
+            <p className="text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Calendar Header */}
       <div className="flex justify-between items-center mb-4">
@@ -217,6 +254,10 @@ const AttendanceCalendar: React.FC = () => {
             const attendancePercentage = hasAttendance ? 
               day.attendanceRecords.filter(r => r.status === 'present').length / day.attendanceRecords.length : 0;
             
+            // Calculate present student count for this day
+            const presentCount = hasAttendance ? 
+              day.attendanceRecords.filter(r => r.status === 'present').length : 0;
+            
             return (
               <div 
                 key={index} 
@@ -258,12 +299,47 @@ const AttendanceCalendar: React.FC = () => {
                           style={{ width: `${attendancePercentage * 100}%` }}
                         />
                       </div>
+                      
+                      {/* Present students indicator */}
+                      {presentCount > 0 && (
+                        <div className="mt-2 flex items-center">
+                          <CheckSquare className="h-3 w-3 text-green-600 mr-1" />
+                          <span className="text-xs text-green-700 font-medium">{presentCount} present</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="bg-white rounded-lg shadow overflow-hidden mb-6 p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Attendance Legend</h3>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center">
+            <div className="h-3 w-3 bg-green-500 rounded-full mr-2"></div>
+            <span className="text-sm text-gray-600">75%+ Present</span>
+          </div>
+          <div className="flex items-center">
+            <div className="h-3 w-3 bg-yellow-500 rounded-full mr-2"></div>
+            <span className="text-sm text-gray-600">50-75% Present</span>
+          </div>
+          <div className="flex items-center">
+            <div className="h-3 w-3 bg-red-500 rounded-full mr-2"></div>
+            <span className="text-sm text-gray-600">Below 50% Present</span>
+          </div>
+          <div className="flex items-center">
+            <span className="inline-block h-5 w-5 rounded-full bg-indigo-50 border-2 border-indigo-600 mr-2"></span>
+            <span className="text-sm text-gray-600">Today</span>
+          </div>
+          <div className="flex items-center">
+            <span className="inline-block px-1.5 py-0.5 rounded-full bg-green-100 text-green-800 text-xs mr-2">10</span>
+            <span className="text-sm text-gray-600">Number of Records</span>
+          </div>
         </div>
       </div>
 

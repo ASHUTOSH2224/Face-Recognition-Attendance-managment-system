@@ -60,7 +60,7 @@ const Sidebar: React.FC = () => {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-center h-16 border-b">
+        <div className="flex items-center justify-center h-16 border-b px-4">
           <h2 className="text-xl font-semibold text-indigo-600">
             Face Attendance
           </h2>
